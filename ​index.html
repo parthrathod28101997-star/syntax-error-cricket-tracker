@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Cricket Score Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Match Scoreboard</h1>
+      <p class="tagline">Live Run & Over Tracker</p>
+    </header>
+
+    <div class="score-card">
+      <div class="team-name" id="teamDisplay">Batting Team</div>
+      <div class="score-display">
+        <span id="runs">0</span> / <span id="wickets">0</span>
+      </div>
+      <div class="overs-display">
+        Overs: <span id="overs">0.0</span> (<span id="balls">0</span> balls)
+      </div>
+      <div class="stats-row">
+        <div>Run Rate (CRR): <span id="crr">0.00</span></div>
+        <div>Target: <span id="targetDisplay">Not Set</span></div>
+      </div>
+    </div>
+
+    <div class="controls-card">
+      <h3>Add Runs</h3>
+      <div class="button-group">
+        <button class="btn btn-run" onclick="addRuns(0)">0 (Dot)</button>
+        <button class="btn btn-run" onclick="addRuns(1)">+1</button>
+        <button class="btn btn-run" onclick="addRuns(2)">+2</button>
+        <button class="btn btn-run" onclick="addRuns(3)">+3</button>
+        <button class="btn btn-run" onclick="addRuns(4)">+4 (Four)</button>
+        <button class="btn btn-run" onclick="addRuns(6)">+6 (Six)</button>
+      </div>
+
+      <h3>Extras & Wicket</h3>
+      <div class="button-group">
+        <button class="btn btn-extra" onclick="addExtra('wide')">Wide (+1)</button>
+        <button class="btn btn-extra" onclick="addExtra('noBall')">No Ball (+1)</button>
+        <button class="btn btn-wicket" onclick="takeWicket()">Wicket!</button>
+      </div>
+
+      <h3>Target Settings</h3>
+      <div class="target-input-row">
+        <input type="number" id="targetInput" placeholder="Set Target Runs" min="1">
+        <button class="btn btn-set" onclick="setTarget()">Set Target</button>
+        <button class="btn btn-reset" onclick="resetMatch()">Reset Match</button>
+      </div>
+    </div>
+
+    <div class="recent-balls-card">
+      <h3>This Over</h3>
+      <div class="recent-balls" id="thisOverDisplay">No balls bowled yet</div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
