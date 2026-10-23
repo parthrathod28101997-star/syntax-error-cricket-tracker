@@ -1,1 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Cricket Score Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; padding: 16px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 16px; }
+    header { text-align: center; }
+    header h1 { font-size: 1.5rem; color: #38bdf8; }
+    .tagline { font-size: 0.85rem; color: #94a3b8; }
+    .score-card, .controls-card { background: #1e293b; border-radius: 12px; padding: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
+    .team-name { font-size: 1.1rem; font-weight: 600; text-align: center; margin-bottom: 8px; color: #f1f5f9; }
+    .score-display { font-size: 3rem; font-weight: 800; text-align: center; color: #f8fafc; }
+    .overs-display { font-size: 1rem; text-align: center; color: #94a3b8; margin-top: 4px; }
+    .stats-row { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #334155; font-size: 0.9rem; }
+    .this-over-row { margin-top: 12px; font-size: 0.85rem; color: #94a3b8; }
+    #thisOverDisplay { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .ball-tag { background: #334155; padding: 4px 8px; border-radius: 6px; font-weight: bold; color: #f8fafc; font-size: 0.8rem; }
+    .ball-tag.four { background: #0284c7; }
+    .ball-tag.six { background: #16a34a; }
+    .ball-tag.wicket { background: #dc2626; }
+    .controls-card h3 { font-size: 0.95rem; margin-bottom: 8px; color: #cbd5e1; }
+    .button-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .btn-run { background: #0284c7; color: white; border: none; border-radius: 8px; padding: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    .btn-run:active { opacity: 0.8; }
+    .btn-extra { background: #475569; color: white; border: none; border-radius: 8px; padding: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+    .btn-wicket { background: #dc2626; color: white; border: none; border-radius: 8px; padding: 12px; font-size: 1rem; font-weight: bold; grid-column: span 3; cursor: pointer; }
+    .target-box { display: flex; gap: 8px; margin-top: 8px; }
+    .target-box input { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; }
+    .target-box button { background: #38bdf8; border: none; border-radius: 6px; padding: 8px 14px; font-weight: 600; cursor: pointer; color: #0f172a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Match Scoreboard</h1>
+      <p class="tagline">Live Run & Over Tracker</p>
+    </header>
 
+    <div class="score-card">
+      <div class="team-name" id="teamDisplay">Batting Team</div>
+      <div class="score-display">
+        <span id="runs">0</span> / <span id="wickets">0</span>
+      </div>
+      <div class="overs-display">
+        Overs: <span id="overs">0.0</span> (<span id="balls">0</span> balls)
+      </div>
+      <div class="stats-row">
+        <div>Run Rate (CRR): <span id="crr">0.00</span></div>
+        <div>Target: <span id="targetDisplay">Not Set</span></div>
+      </div>
+      <div class="this-over-row">
+        This Over:
+        <div id="thisOverDisplay">No balls bowled yet</div>
+      </div>
+    </div>
+
+    <div class="controls-card">
+      <h3>Add Runs</h3>
+      <div class="button-group">
+        <button class="btn-run" onclick="addRuns(0)">0 (Dot)</button>
+        <button class="btn-run" onclick="addRuns(1)">+1</button>
+        <button class="btn-run" onclick="addRuns(2)">+2</button>
+        <button class="btn-run" onclick="addRuns(3)">+3</button>
+        <button class="btn-run" onclick="addRuns(4)">+4 (Four)</button>
+        <button class="btn-run" onclick="addRuns(6)">+6 (Six)</button>
+      </div>
+
+      <h3>Extras & Wicket</h3>
+      <div class="button-group">
+        <button class="btn-extra" onclick="addExtra('wide')">Wide (Wd)</button>
+        <button class="btn-extra" onclick="addExtra('noBall')">No Ball (Nb)</button>
+        <button class="btn-wicket" onclick="takeWicket()">WICKET!</button>
+      </div>
+
+      <h3>Set Target</h3>
+      <div class="target-box">
+        <input type="number" id="targetInput" placeholder="Enter target runs">
+        <button onclick="setTarget()">Set</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let runs = 0;
+    let wickets = 0;
+    let legalBalls = 0;
+    let currentOverBalls = [];
+    let target = null;
+
+    function updateDisplay() {
+      document.getElementById("runs").textContent = runs;
+      document.getElementById("wickets").textContent = wickets;
+
+      const oversCompleted = Math.floor(legalBalls / 6);
+      const ballsInCurrentOver = legalBalls % 6;
+      document.getElementById("overs").textContent = `${oversCompleted}.${ballsInCurrentOver}`;
+      document.getElementById("balls").textContent = legalBalls;
+
+      const totalOversFraction = legalBalls / 6;
+      const crr = totalOversFraction > 0 ? (runs / totalOversFraction).toFixed(2) : "0.00";
+      document.getElementById("crr").textContent = crr;
+
+      const thisOverContainer = document.getElementById("thisOverDisplay");
+      if (currentOverBalls.length === 0) {
+        thisOverContainer.textContent = "No balls bowled yet";
+      } else {
+        thisOverContainer.innerHTML = currentOverBalls.map(item => {
+          let extraClass = "";
+          if (item === "4") extraClass = "four";
+          if (item === "6") extraClass = "six";
+          if (item === "W") extraClass = "wicket";
+          return `<span class="ball-tag ${extraClass}">${item}</span>`;
+        }).join("");
+      }
+    }
+
+    function addRuns(r) {
+      if (wickets >= 10) {
+        alert("Innings Over! All out.");
+        return;
+      }
+      runs += r;
+      legalBalls += 1;
+      currentOverBalls.push(r.toString());
+
+      if (legalBalls % 6 === 0) {
+        currentOverBalls = [];
+      }
+
+      updateDisplay();
+      checkTarget();
+    }
+
+    function addExtra(type) {
+      if (wickets >= 10) return;
+      runs += 1;
+      if (type === "wide") {
+        currentOverBalls.push("Wd");
+      } else {
+        currentOverBalls.push("Nb");
+      }
+      updateDisplay();
+      checkTarget();
+    }
+
+    function takeWicket() {
+      if (wickets >= 10) {
+        alert("All wickets fallen!");
+        return;
+      }
+      wickets += 1;
+      legalBalls += 1;
+      currentOverBalls.push("W");
+
+      if (legalBalls % 6 === 0) {
+        currentOverBalls = [];
+      }
+      updateDisplay();
+    }
+
+    function setTarget() {
+      const inputVal = parseInt(document.getElementById("targetInput").value);
+      if (!isNaN(inputVal) && inputVal > 0) {
+        target = inputVal;
+        document.getElementById("targetDisplay").textContent = target;
+      }
+    }
+
+    function checkTarget() {
+      if (target && runs >= target) {
+        setTimeout(() => alert("Target Achieved! Team Won!"), 50);
+      }
+    }
+  </script>
+</body>
+</html>
